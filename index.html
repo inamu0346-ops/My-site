@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Live TV - RetroCrush Stream</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 0 0 10px #ff6b6b;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .player-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #ff6b6b;
+            text-align: center;
+        }
+
+        .status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 5px #ff6b6b; }
+            50% { text-shadow: 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+        }
+
+        .logo:hover {
+            animation: glow 1s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🎌 Anime Live TV</div>
+        <div class="controls">
+            <button onclick="toggleFullscreen()">📺 Fullscreen</button>
+            <button onclick="refreshStream()">🔄 Refresh</button>
+            <button onclick="toggleMute()">🔊 Mute</button>
+        </div>
+    </div>
+
+    <div class="player-container">
+        <video id="videoPlayer" controls autoplay muted playsinline>
+            <source src="https://www.retrocrush.tv/livetv" type="application/x-mpegurl">
+            Your browser does not support the video tag.
+        </video>
+        <div class="loading" id="loading">Loading RetroCrush Live Stream...</div>
+        <div class="status" id="status">Status: Initializing...</div>
+    </div>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+
+        // Try multiple stream sources/methods
+        const streamSources = [
+            'https://www.retrocrush.tv/livetv',
+            // Note: Direct HLS/m3u8 extraction would go here if accessible
+            // Fallback to iframe embed if direct video fails
+        ];
+
+        let currentSourceIndex = 0;
+        let isMuted = true;
+
+        // Initialize player
+        function initPlayer() {
+            status.textContent = 'Status: Connecting to RetroCrush...';
+            loading.style.display = 'block';
+            
+            video.src = streamSources[currentSourceIndex];
+            video.load();
+        }
+
+        // Handle video events
+        video.addEventListener('loadstart', () => {
+            status.textContent = 'Status: Connecting...';
+        });
+
+        video.addEventListener('canplay', () => {
+            loading.style.display = 'none';
+            status.textContent = 'Status: Live - RetroCrush TV';
+        });
+
+        video.addEventListener('error', (e) => {
+            console.error('Stream error:', e);
+            loading.style.display = 'block';
+            status.textContent = 'Status: Stream error - Retrying...';
+            
+            // Try next source after delay
+            setTimeout(() => {
+                currentSourceIndex = (currentSourceIndex + 1) % streamSources.length;
+                initPlayer();
+            }, 3000);
+        });
+
+        video.addEventListener('playing', () => {
+            status.textContent = `Status: Live ✓ | ${Math.floor(video.duration/60)}min buffer`;
+        });
+
+        // Control functions
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function refreshStream() {
+            video.load();
+            initPlayer();
+        }
+
+        function toggleMute() {
+            isMuted = !video.muted;
+            video.muted = isMuted;
+            document.querySelector('button[onclick="toggleMute()"]').textContent = 
+                isMuted ? '🔊 Unmute' : '🔇 Mute';
+        }
+
+        // Auto-reconnect on network issues
+        setInterval(() => {
+            if (video.networkState === 3 || video.readyState === 0) {
+                refreshStream();
+            }
+        }, 10000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    video.paused ? video.play() : video.pause();
+                    break;
+                case 'KeyF':
+                    toggleFullscreen();
+                    break;
+                case 'KeyR':
+                    refreshStream();
+                    break;
+                case 'KeyM':
+                    toggleMute();
+                    break;
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', initPlayer);
+
+        // Handle visibility change (pause when tab inactive)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                video.pause();
+            } else {
+                video.play().catch(() => {});
+            }
+        });
+    </script>
+</body>
+</html>
